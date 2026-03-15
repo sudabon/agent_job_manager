@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: agent_job_manager
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: uv run uvicorn src.main:app --host 0.0.0.0 --port 8000
+    working_dir: /app
+    environment:
+      AJM_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/agent_job_manager
+      AJM_REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: uv run python -m src.worker
+    working_dir: /app
+    environment:
+      AJM_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/agent_job_manager
+      AJM_REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./backend:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  postgres-data:

@@ -1,5 +1,19 @@
+# MacOS
 **/.DS_store
+
+# IDE
 .specstory/
+.serena/
+
+# CodingAgent
+.claude/
+.codex/
+.cursor/
+
+# Cursor
 .cursorrules
 .cursorignore
 .cursorindexingignore
+
+# Python
+**/__pycache__/

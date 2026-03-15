@@ -1,5 +1,5 @@
-from pathlib import Path
 import unittest
+from pathlib import Path
 
 
 class ArchitectureConfig:
@@ -14,8 +14,8 @@ class TestSourceStructure(unittest.TestCase):
 
     def test_source_folders(self):
         """Verify todo_app contains only Clean Architecture layer folders."""
-        src_path = Path("todo_app")
-        folders = {f.name for f in src_path.iterdir() if f.is_dir()}
+        src_path = Path("src")
+        folders = {f.name for f in src_path.iterdir() if f.is_dir() and not f.name.startswith("__")}
 
         # All layer folders must exist
         for layer in ArchitectureConfig.LAYER_HIERARCHY:
