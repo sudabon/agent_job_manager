@@ -1,6 +1,6 @@
 """Worker entrypoint."""
 
-from arq.worker import run_worker
+from src.worker import run_worker
 
 from src.infra.queue.worker import WorkerSettings
 
