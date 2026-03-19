@@ -4,6 +4,7 @@
 # IDE
 .specstory/
 .serena/
+.smart-edit/
 
 # CodingAgent
 .claude/
