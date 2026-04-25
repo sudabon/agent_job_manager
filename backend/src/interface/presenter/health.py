@@ -7,7 +7,7 @@ from src.interface.viewmodel.health import (
 )
 
 
-class HealthPresender:
+class HealthPresenter:
     """Convert health data into HTTP view models."""
 
     def present_live(self) -> LivenessViewModel:

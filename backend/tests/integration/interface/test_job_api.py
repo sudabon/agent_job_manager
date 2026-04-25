@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from src.domain.entity.job import Job, JobId, JobStatus
+from src.domain.entity.job import Job, JobExecution, JobId, JobStatus
 from src.infra.persistence.job_repository import SqlAlchemyJobRepository
 
 
@@ -58,11 +58,14 @@ async def test_job_endpoints_return_submitted_job(
             status=JobStatus.SUCCEEDED,
             metadata=stored_job.metadata,
             created_at=stored_job.created_at,
-            started_at=datetime.now(UTC),
-            finished_at=datetime.now(UTC),
-            exit_code=0,
-            stdout="hello\n",
-            stderr="",
+            execution=JobExecution(
+                started_at=datetime.now(UTC),
+                finished_at=datetime.now(UTC),
+                exit_code=0,
+                stdout="hello\n",
+                stderr="",
+                error_type=None,
+            ),
         )
         await repository.update(completed_job)
 

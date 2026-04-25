@@ -38,6 +38,18 @@ class ErrorType(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class JobExecution:
+    """Execution timestamps and result data for a job."""
+
+    started_at: datetime | None
+    finished_at: datetime | None
+    exit_code: int | None
+    stdout: str
+    stderr: str
+    error_type: ErrorType | None
+
+
+@dataclass(frozen=True, slots=True)
 class JobId:
     """Identifier for jobs."""
 
@@ -63,12 +75,7 @@ class Job:
     status: JobStatus = JobStatus.QUEUED
     metadata: dict[str, object] | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
-    started_at: datetime | None = None
-    finished_at: datetime | None = None
-    exit_code: int | None = None
-    stdout: str = ""
-    stderr: str = ""
-    error_type: ErrorType | None = None
+    execution: JobExecution | None = None
 
     def __post_init__(self) -> None:
         if not self.code.strip():

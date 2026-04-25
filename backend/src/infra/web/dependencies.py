@@ -13,7 +13,7 @@ from src.app.common.errors import AuthenticationFailed
 from src.app.usecase.get_job import GetJobUseCase
 from src.app.usecase.get_job_logs import GetJobLogsUseCase
 from src.app.usecase.list_jobs import ListJobsUseCase
-from src.app.usecase.submit_python_job import SubmitPythonJobUseCase
+from src.app.usecase.submit_python_job import JobSubmissionLimits, SubmitPythonJobUseCase
 from src.domain.entity.api_key import ApiKey
 from src.domain.service.job_domain_service import JobDomainService
 from src.infra.auth.api_key_hasher import hash_api_key
@@ -23,8 +23,8 @@ from src.infra.persistence.job_repository import SqlAlchemyJobRepository
 from src.infra.queue.job_queue import ArqJobQueue
 from src.interface.controller.health_controller import HealthController
 from src.interface.controller.job_controller import JobController
-from src.interface.presender.health import HealthPresender
-from src.interface.presender.job import JobPresender
+from src.interface.presenter.health import HealthPresenter
+from src.interface.presenter.job import JobPresenter
 
 
 def get_settings(request: Request) -> Settings:
@@ -50,29 +50,66 @@ def get_api_key_repository(
     return SqlAlchemyApiKeyRepository(session)
 
 
-def get_job_controller(
+def get_job_presenter() -> JobPresenter:
+    """Create the job presenter."""
+    return JobPresenter()
+
+
+def get_submit_use_case(
     request: Request,
-    session: AsyncSession = Depends(get_db_session),
-) -> JobController:
-    """Create the job controller."""
-    settings: Settings = request.app.state.settings
-    job_repository = SqlAlchemyJobRepository(session)
+    settings: Settings = Depends(get_settings),
+    job_repository: SqlAlchemyJobRepository = Depends(get_job_repository),
+) -> SubmitPythonJobUseCase:
+    """Create the submit job use case."""
     queue = ArqJobQueue(request.app.state.redis_pool, settings.worker_queue_name)
-    presender = JobPresender()
-    return JobController(
-        SubmitPythonJobUseCase(
-            job_repository,
-            queue,
-            JobDomainService(),
+    return SubmitPythonJobUseCase(
+        job_repository,
+        queue,
+        JobDomainService(),
+        JobSubmissionLimits(
             default_timeout_sec=settings.default_timeout_sec,
             min_timeout_sec=settings.min_timeout_sec,
             max_timeout_sec=settings.max_timeout_sec,
             max_code_size_bytes=settings.max_code_size_bytes,
         ),
-        GetJobUseCase(job_repository),
-        ListJobsUseCase(job_repository),
-        GetJobLogsUseCase(job_repository),
-        presender,
+    )
+
+
+def get_get_job_use_case(
+    job_repository: SqlAlchemyJobRepository = Depends(get_job_repository),
+) -> GetJobUseCase:
+    """Create the get job use case."""
+    return GetJobUseCase(job_repository)
+
+
+def get_list_jobs_use_case(
+    job_repository: SqlAlchemyJobRepository = Depends(get_job_repository),
+) -> ListJobsUseCase:
+    """Create the list jobs use case."""
+    return ListJobsUseCase(job_repository)
+
+
+def get_get_job_logs_use_case(
+    job_repository: SqlAlchemyJobRepository = Depends(get_job_repository),
+) -> GetJobLogsUseCase:
+    """Create the get job logs use case."""
+    return GetJobLogsUseCase(job_repository)
+
+
+def get_job_controller(
+    submit_use_case: SubmitPythonJobUseCase = Depends(get_submit_use_case),
+    get_job_use_case: GetJobUseCase = Depends(get_get_job_use_case),
+    list_jobs_use_case: ListJobsUseCase = Depends(get_list_jobs_use_case),
+    get_job_logs_use_case: GetJobLogsUseCase = Depends(get_get_job_logs_use_case),
+    presenter: JobPresenter = Depends(get_job_presenter),
+) -> JobController:
+    """Create the job controller."""
+    return JobController(
+        submit_use_case,
+        get_job_use_case,
+        list_jobs_use_case,
+        get_job_logs_use_case,
+        presenter,
     )
 
 
@@ -92,7 +129,7 @@ def get_health_controller(request: Request) -> HealthController:
     return HealthController(
         database_checker=lambda: check_database(request),
         redis_checker=lambda: check_redis(request),
-        presender=HealthPresender(),
+        presenter=HealthPresenter(),
     )
 
 

@@ -55,16 +55,17 @@ class JobDetailOutput(BaseModel):
     @classmethod
     def from_job(cls, job: Job) -> JobDetailOutput:
         """Convert a domain entity into a DTO."""
+        execution = job.execution
         return cls(
             job_id=str(job.job_id),
             job_type=job.job_type,
             status=job.status,
             timeout_sec=job.timeout_sec,
             created_at=job.created_at,
-            started_at=job.started_at,
-            finished_at=job.finished_at,
-            exit_code=job.exit_code,
-            error_type=job.error_type,
+            started_at=execution.started_at if execution else None,
+            finished_at=execution.finished_at if execution else None,
+            exit_code=execution.exit_code if execution else None,
+            error_type=execution.error_type if execution else None,
             metadata=job.metadata,
         )
 

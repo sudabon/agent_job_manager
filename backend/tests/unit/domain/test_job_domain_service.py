@@ -27,7 +27,8 @@ def test_job_domain_service_mark_running_allows_transition() -> None:
     service = JobDomainService()
     running_job = service.mark_running(_job(), started_at=datetime.now(UTC))
     assert running_job.status == JobStatus.RUNNING
-    assert running_job.started_at is not None
+    assert running_job.execution is not None
+    assert running_job.execution.started_at is not None
 
 
 def test_job_domain_service_mark_finished_rejects_invalid_transition() -> None:
@@ -54,7 +55,8 @@ def test_job_domain_service_mark_finished_marks_timeout() -> None:
         error_type=ErrorType.TIMEOUT,
     )
     assert finished_job.status == JobStatus.TIMED_OUT
-    assert finished_job.error_type == ErrorType.TIMEOUT
+    assert finished_job.execution is not None
+    assert finished_job.execution.error_type == ErrorType.TIMEOUT
 
 
 def test_job_domain_service_validate_timeout_rejects_out_of_range_value() -> None:

@@ -37,7 +37,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: uv run python -m src.worker
+    command: uv run arq src.infra.queue.worker.WorkerSettings
     working_dir: /app
     environment:
       AJM_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/agent_job_manager

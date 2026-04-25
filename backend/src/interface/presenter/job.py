@@ -15,7 +15,7 @@ from src.interface.viewmodel.job import (
 )
 
 
-class JobPresender:
+class JobPresenter:
     """Convert use case DTOs into HTTP view models."""
 
     def present_submit(self, payload: SubmitPythonJobOutput) -> SubmitJobResponseViewModel:
