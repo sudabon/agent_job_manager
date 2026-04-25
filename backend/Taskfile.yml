@@ -1,0 +1,27 @@
+version: "3"
+
+tasks:
+  format:
+    desc: Run format with ruff
+    cmds:
+      - uv run ruff format src/
+
+  check:
+    desc: Run check with mypy
+    cmds:
+      - uv run mypy src/
+
+  lint:
+    desc: Run lint with ruff
+    cmds:
+      - uv run ruff check src/
+
+  test:
+    desc: Run pytest
+    cmds:
+      - uv run pytest .
+
+  run:
+    desc: Run the app
+    cmds:
+      - uv run uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
