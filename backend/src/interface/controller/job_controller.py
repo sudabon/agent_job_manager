@@ -6,7 +6,7 @@ from src.app.usecase.get_job_logs import GetJobLogsUseCase
 from src.app.usecase.list_jobs import ListJobsUseCase
 from src.app.usecase.submit_python_job import SubmitPythonJobUseCase
 from src.domain.entity.job import JobStatus
-from src.interface.presender.job import JobPresender
+from src.interface.presenter.job import JobPresenter
 from src.interface.viewmodel.job import (
     JobListViewModel,
     JobLogsViewModel,
@@ -24,13 +24,13 @@ class JobController:
         get_job_use_case: GetJobUseCase,
         list_jobs_use_case: ListJobsUseCase,
         get_job_logs_use_case: GetJobLogsUseCase,
-        presender: JobPresender,
+        presenter: JobPresenter,
     ) -> None:
         self._submit_job_use_case = submit_job_use_case
         self._get_job_use_case = get_job_use_case
         self._list_jobs_use_case = list_jobs_use_case
         self._get_job_logs_use_case = get_job_logs_use_case
-        self._presender = presender
+        self._presenter = presenter
 
     async def submit_python_job(
         self,
@@ -49,14 +49,14 @@ class JobController:
                 metadata=metadata,
             )
         )
-        return self._presender.present_submit(output)
+        return self._presenter.present_submit(output)
 
     async def get_job(self, *, api_key_id: str, job_id: str) -> JobViewModel:
         """Return a job detail response."""
         output = await self._get_job_use_case.execute(
             GetJobInput(api_key_id=api_key_id, job_id=job_id)
         )
-        return self._presender.present_job(output)
+        return self._presenter.present_job(output)
 
     async def list_jobs(
         self,
@@ -70,11 +70,11 @@ class JobController:
         output = await self._list_jobs_use_case.execute(
             ListJobsInput(api_key_id=api_key_id, page=page, per_page=per_page, status=status)
         )
-        return self._presender.present_job_list(output)
+        return self._presenter.present_job_list(output)
 
     async def get_job_logs(self, *, api_key_id: str, job_id: str) -> JobLogsViewModel:
         """Return job logs."""
         output = await self._get_job_logs_use_case.execute(
             GetJobLogsInput(api_key_id=api_key_id, job_id=job_id)
         )
-        return self._presender.present_logs(output)
+        return self._presenter.present_logs(output)

@@ -34,7 +34,7 @@
 │   |   │   └── web/          # Web関連（FastAPIルーター定義・Middleware）
 │   |   └── interface/        # Interface層
 │   |       ├── controller/   # 入力リクエスト処理
-│   |       ├── presender/    # 出力変換（domain固有の型をviewmodel固有の型へ変換）
+│   |       ├── presenter/    # 出力変換（domain固有の型をviewmodel固有の型へ変換）
 │   |       └── viewmodel/    # レスポンス整形用ViewModel
 |   └── tests                 # 単体テスト
 │       ├── arch/             # クリーンアーキテクチャのテスト

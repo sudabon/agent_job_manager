@@ -51,6 +51,7 @@ uv run python -m src.infra.cli.create_api_key --name "my-agent"
 cd backend
 uv sync
 uv run uvicorn src.main:app --reload  # http://localhost:8000
+uv run arq src.infra.queue.worker.WorkerSettings
 ```
 
 ## API
@@ -135,7 +136,6 @@ uv run mypy src/                 # 型チェック
 ```
 backend/src/
 ├── main.py              # FastAPI アプリケーション起動
-├── worker.py            # arq ワーカー
 ├── domain/              # ドメイン層（エンティティ・状態遷移ルール）
 ├── app/                 # アプリケーション層（ユースケース・DTO・リポジトリIF）
 ├── infra/               # インフラ層（DB・Docker・Redis・設定）

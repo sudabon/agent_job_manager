@@ -29,3 +29,13 @@ class TestSourceStructure(unittest.TestCase):
             f"Source should only contain Clean Architecture layers.\n"
             f"Unexpected folders found: {unexpected}",
         )
+
+    def test_interface_folders(self):
+        """Verify interface layer folder names use the expected convention."""
+        interface_path = Path("src/interface")
+        folders = {
+            f.name for f in interface_path.iterdir() if f.is_dir() and not f.name.startswith("__")
+        }
+
+        self.assertIn("presenter", folders)
+        self.assertNotIn("presender", folders)

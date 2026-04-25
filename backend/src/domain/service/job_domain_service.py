@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import datetime
 
-from src.domain.entity.job import ErrorType, Job, JobStatus
+from src.domain.entity.job import ErrorType, Job, JobExecution, JobStatus
 from src.domain.exceptions import InvalidJobStateTransition, InvalidTimeout
 
 _ALLOWED_TRANSITIONS: dict[JobStatus, set[JobStatus]] = {
@@ -46,10 +46,14 @@ class JobDomainService:
         return replace(
             job,
             status=JobStatus.RUNNING,
-            started_at=started_at,
-            finished_at=None,
-            exit_code=None,
-            error_type=None,
+            execution=JobExecution(
+                started_at=started_at,
+                finished_at=None,
+                exit_code=None,
+                stdout="",
+                stderr="",
+                error_type=None,
+            ),
         )
 
     def mark_finished(
@@ -76,9 +80,12 @@ class JobDomainService:
         return replace(
             job,
             status=status,
-            stdout=stdout,
-            stderr=stderr,
-            exit_code=exit_code,
-            finished_at=finished_at,
-            error_type=error_type,
+            execution=JobExecution(
+                started_at=job.execution.started_at if job.execution else None,
+                finished_at=finished_at,
+                exit_code=exit_code,
+                stdout=stdout,
+                stderr=stderr,
+                error_type=error_type,
+            ),
         )

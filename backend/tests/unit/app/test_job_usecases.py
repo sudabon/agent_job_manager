@@ -15,11 +15,12 @@ from src.app.dto.job import (
     ListJobsInput,
     SubmitPythonJobInput,
 )
+from src.app.usecase._job_access import find_owned_job
 from src.app.usecase.execute_job import ExecuteJobUseCase
 from src.app.usecase.get_job import GetJobUseCase
 from src.app.usecase.get_job_logs import GetJobLogsUseCase
 from src.app.usecase.list_jobs import ListJobsUseCase
-from src.app.usecase.submit_python_job import SubmitPythonJobUseCase
+from src.app.usecase.submit_python_job import JobSubmissionLimits, SubmitPythonJobUseCase
 from src.domain.entity.api_key import ApiKeyId
 from src.domain.entity.job import ErrorType, Job, JobId, JobStatus, JobType
 from src.domain.service.job_domain_service import JobDomainService
@@ -83,10 +84,12 @@ async def test_submit_python_job_use_case_creates_and_enqueues_job() -> None:
         repository,
         queue,
         JobDomainService(),
-        default_timeout_sec=30,
-        min_timeout_sec=1,
-        max_timeout_sec=300,
-        max_code_size_bytes=64 * 1024,
+        JobSubmissionLimits(
+            default_timeout_sec=30,
+            min_timeout_sec=1,
+            max_timeout_sec=300,
+            max_code_size_bytes=64 * 1024,
+        ),
         ulid_factory=lambda: "01TEST",
         now_provider=lambda: datetime(2026, 3, 15, tzinfo=UTC),
     )
@@ -105,10 +108,12 @@ async def test_submit_python_job_use_case_rejects_large_code() -> None:
         InMemoryJobRepository(),
         DummyQueue(),
         JobDomainService(),
-        default_timeout_sec=30,
-        min_timeout_sec=1,
-        max_timeout_sec=300,
-        max_code_size_bytes=4,
+        JobSubmissionLimits(
+            default_timeout_sec=30,
+            min_timeout_sec=1,
+            max_timeout_sec=300,
+            max_code_size_bytes=4,
+        ),
     )
 
     with pytest.raises(ValidationError):
@@ -122,6 +127,33 @@ async def test_get_job_use_case_raises_for_missing_job() -> None:
     with pytest.raises(JobNotFound):
         await GetJobUseCase(InMemoryJobRepository()).execute(
             GetJobInput(api_key_id="ak_test", job_id="job_missing")
+        )
+
+
+@pytest.mark.asyncio
+async def test_find_owned_job_returns_existing_job_for_owner() -> None:
+    repository = InMemoryJobRepository()
+    await repository.add(_job())
+
+    job = await find_owned_job(
+        repository,
+        JobId("job_existing"),
+        ApiKeyId("ak_test"),
+    )
+
+    assert job.job_id == JobId("job_existing")
+
+
+@pytest.mark.asyncio
+async def test_find_owned_job_raises_for_wrong_owner() -> None:
+    repository = InMemoryJobRepository()
+    await repository.add(_job())
+
+    with pytest.raises(JobNotFound):
+        await find_owned_job(
+            repository,
+            JobId("job_existing"),
+            ApiKeyId("ak_other"),
         )
 
 
@@ -166,7 +198,9 @@ async def test_execute_job_use_case_updates_terminal_state() -> None:
     output = await use_case.execute(ExecuteJobInput(job_id="job_existing"))
 
     assert output.status == JobStatus.SUCCEEDED
-    assert repository.jobs["job_existing"].stdout == "hello\n"
+    execution = repository.jobs["job_existing"].execution
+    assert execution is not None
+    assert execution.stdout == "hello\n"
 
 
 @pytest.mark.asyncio
@@ -182,4 +216,6 @@ async def test_execute_job_use_case_marks_infrastructure_error_on_runner_failure
     output = await use_case.execute(ExecuteJobInput(job_id="job_existing"))
 
     assert output.status == JobStatus.FAILED
-    assert repository.jobs["job_existing"].error_type == ErrorType.INFRASTRUCTURE_ERROR
+    execution = repository.jobs["job_existing"].execution
+    assert execution is not None
+    assert execution.error_type == ErrorType.INFRASTRUCTURE_ERROR
